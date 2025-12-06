@@ -19,4 +19,8 @@ public interface IPostService {
     List<PostResponse> getPublishedPosts();
    
     List<PostResponse> filterPosts(String content, String author, LocalDateTime startDate, LocalDateTime endDate);
+    
+    List<PostResponse> getPendingPosts();
+    
+    PostResponse updatePostStatus(Long id, String status);
 }

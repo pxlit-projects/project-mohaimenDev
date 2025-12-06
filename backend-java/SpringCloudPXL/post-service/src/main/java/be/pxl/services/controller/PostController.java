@@ -2,6 +2,7 @@ package be.pxl.services.controller;
 
 import be.pxl.services.domain.dto.PostRequest;
 import be.pxl.services.domain.dto.PostResponse;
+import be.pxl.services.domain.dto.StatusUpdateRequest;
 import be.pxl.services.services.IPostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -57,5 +58,19 @@ public class PostController {
         }
         
         return ResponseEntity.ok(posts);
+    }
+    
+    @GetMapping("/pending")
+    public ResponseEntity<List<PostResponse>> getPendingPosts() {
+        List<PostResponse> posts = postService.getPendingPosts();
+        return ResponseEntity.ok(posts);
+    }
+    
+    @PutMapping("/{id}/status")
+    public ResponseEntity<PostResponse> updatePostStatus(
+            @PathVariable Long id,
+            @RequestBody StatusUpdateRequest request) {
+        PostResponse response = postService.updatePostStatus(id, request.getStatus());
+        return ResponseEntity.ok(response);
     }
 }

@@ -1,0 +1,83 @@
+package be.pxl.services.services;
+
+import be.pxl.services.client.PostServiceClient;
+import be.pxl.services.domain.Review;
+import be.pxl.services.domain.dto.*;
+import be.pxl.services.repository.ReviewRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ReviewServiceImpl implements IReviewService {
+    
+    private final ReviewRepository reviewRepository;
+    private final PostServiceClient postServiceClient;
+    
+    @Override
+    public List<PostResponse> getPendingPosts() {
+        return postServiceClient.getPendingPosts();
+    }
+    
+    @Override
+    @Transactional
+    public ReviewResponse approvePost(Long postId, ReviewRequest request) {
+        Review review = Review.builder()
+                .postId(postId)
+                .author(request.getAuthor())
+                .comment(request.getComment())
+                .approved(true)
+                .reviewDate(LocalDateTime.now())
+                .build();
+        
+        Review savedReview = reviewRepository.save(review);
+        
+        postServiceClient.updatePostStatus(postId, 
+                StatusUpdateRequest.builder().status("PUBLISHED").build());
+        
+        return mapToResponse(savedReview);
+    }
+    
+    @Override
+    @Transactional
+    public ReviewResponse rejectPost(Long postId, ReviewRequest request) {
+        Review review = Review.builder()
+                .postId(postId)
+                .author(request.getAuthor())
+                .comment(request.getComment())
+                .approved(false)
+                .reviewDate(LocalDateTime.now())
+                .build();
+        
+        Review savedReview = reviewRepository.save(review);
+        
+        postServiceClient.updatePostStatus(postId, 
+                StatusUpdateRequest.builder().status("REJECTED").build());
+        
+        return mapToResponse(savedReview);
+    }
+    
+    @Override
+    public List<ReviewResponse> getReviewsByPostId(Long postId) {
+        return reviewRepository.findByPostId(postId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+    
+    private ReviewResponse mapToResponse(Review review) {
+        return ReviewResponse.builder()
+                .id(review.getId())
+                .postId(review.getPostId())
+                .author(review.getAuthor())
+                .comment(review.getComment())
+                .approved(review.isApproved())
+                .reviewDate(review.getReviewDate())
+                .build();
+    }
+}

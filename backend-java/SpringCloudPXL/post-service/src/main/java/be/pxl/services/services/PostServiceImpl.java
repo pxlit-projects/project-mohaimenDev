@@ -113,6 +113,27 @@ public class PostServiceImpl implements IPostService {
         return text.toLowerCase().contains(search.toLowerCase());
     }
     
+    @Override
+    public List<PostResponse> getPendingPosts() {
+        return postRepository.findByStatus(PostStatus.PENDING_REVIEW)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional
+    public PostResponse updatePostStatus(Long id, String status) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Post not found with id: " + id));
+        
+        PostStatus newStatus = PostStatus.valueOf(status.toUpperCase());
+        post.setStatus(newStatus);
+        
+        Post updatedPost = postRepository.save(post);
+        return mapToResponse(updatedPost);
+    }
+    
     private PostResponse mapToResponse(Post post) {
         return PostResponse.builder()
                 .id(post.getId())

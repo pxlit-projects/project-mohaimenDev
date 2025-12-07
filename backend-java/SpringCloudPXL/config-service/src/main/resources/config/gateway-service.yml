@@ -1,0 +1,37 @@
+server:
+  port: 8084
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+          routes:
+            - id: post-service
+              uri: lb://post-service
+              predicates:
+                - Path=/post/**
+              filters:
+                - RewritePath=/post/(?<path>.*), /$\{path}
+            - id: review-service
+              uri: lb://review-service
+              predicates:
+                - Path=/review/**
+              filters:
+                - RewritePath=/review/(?<path>.*), /$\{path}
+            - id: comment-service
+              uri: lb://comment-service
+              predicates:
+                - Path=/comment/**
+              filters:
+                - RewritePath=/comment/(?<path>.*), /$\{path}
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8061/eureka/

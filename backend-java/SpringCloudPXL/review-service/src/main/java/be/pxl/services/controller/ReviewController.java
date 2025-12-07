@@ -25,10 +25,8 @@ public class ReviewController {
     }
     
     @PostMapping("/{postId}/approve")
-    public ResponseEntity<ReviewResponse> approvePost(
-            @PathVariable Long postId,
-            @RequestBody ReviewRequest request) {
-        ReviewResponse response = reviewService.approvePost(postId, request);
+    public ResponseEntity<ReviewResponse> approvePost(@PathVariable Long postId) {
+        ReviewResponse response = reviewService.approvePost(postId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     

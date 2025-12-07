@@ -5,6 +5,8 @@ import be.pxl.services.domain.Review;
 import be.pxl.services.domain.dto.*;
 import be.pxl.services.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +16,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReviewServiceImpl implements IReviewService {
     
     private final ReviewRepository reviewRepository;
     private final PostServiceClient postServiceClient;
+    private final RabbitTemplate rabbitTemplate;
     
     @Override
     public List<PostResponse> getPendingPosts() {
@@ -26,11 +30,11 @@ public class ReviewServiceImpl implements IReviewService {
     
     @Override
     @Transactional
-    public ReviewResponse approvePost(Long postId, ReviewRequest request) {
+    public ReviewResponse approvePost(Long postId) {
         Review review = Review.builder()
                 .postId(postId)
-                .author(request.getAuthor())
-                .comment(request.getComment())
+                .author("System")
+                .comment(null)
                 .approved(true)
                 .reviewDate(LocalDateTime.now())
                 .build();
@@ -39,6 +43,11 @@ public class ReviewServiceImpl implements IReviewService {
         
         postServiceClient.updatePostStatus(postId, 
                 StatusUpdateRequest.builder().status("PUBLISHED").build());
+        
+        // Send notification to RabbitMQ (US8)
+        String message = "Post " + postId + " has been APPROVED and published!";
+        rabbitTemplate.convertAndSend("notificationQueue", message);
+        log.info("Notification sent: {}", message);
         
         return mapToResponse(savedReview);
     }
@@ -58,6 +67,11 @@ public class ReviewServiceImpl implements IReviewService {
         
         postServiceClient.updatePostStatus(postId, 
                 StatusUpdateRequest.builder().status("REJECTED").build());
+        
+        // Send notification to RabbitMQ (US8)
+        String message = "Post " + postId + " has been REJECTED. Reason: " + request.getComment();
+        rabbitTemplate.convertAndSend("notificationQueue", message);
+        log.info("Notification sent: {}", message);
         
         return mapToResponse(savedReview);
     }

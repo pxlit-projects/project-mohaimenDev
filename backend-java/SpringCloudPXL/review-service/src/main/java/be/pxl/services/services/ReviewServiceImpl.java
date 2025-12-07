@@ -30,11 +30,15 @@ public class ReviewServiceImpl implements IReviewService {
     
     @Override
     @Transactional
-    public ReviewResponse approvePost(Long postId) {
+    public ReviewResponse approvePost(Long postId, ReviewRequest request) {
+        // Use request values if provided, otherwise use defaults
+        String author = (request != null && request.getAuthor() != null) ? request.getAuthor() : "System";
+        String comment = (request != null) ? request.getComment() : null;
+        
         Review review = Review.builder()
                 .postId(postId)
-                .author("System")
-                .comment(null)
+                .author(author)
+                .comment(comment)
                 .approved(true)
                 .reviewDate(LocalDateTime.now())
                 .build();
@@ -43,8 +47,7 @@ public class ReviewServiceImpl implements IReviewService {
         
         postServiceClient.updatePostStatus(postId, 
                 StatusUpdateRequest.builder().status("PUBLISHED").build());
-        
-        // Send notification to RabbitMQ (US8)
+
         String message = "Post " + postId + " has been APPROVED and published!";
         rabbitTemplate.convertAndSend("notificationQueue", message);
         log.info("Notification sent: {}", message);
@@ -67,8 +70,7 @@ public class ReviewServiceImpl implements IReviewService {
         
         postServiceClient.updatePostStatus(postId, 
                 StatusUpdateRequest.builder().status("REJECTED").build());
-        
-        // Send notification to RabbitMQ (US8)
+
         String message = "Post " + postId + " has been REJECTED. Reason: " + request.getComment();
         rabbitTemplate.convertAndSend("notificationQueue", message);
         log.info("Notification sent: {}", message);

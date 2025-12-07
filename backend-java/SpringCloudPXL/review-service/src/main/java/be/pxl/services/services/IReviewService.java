@@ -10,7 +10,7 @@ public interface IReviewService {
     
     List<PostResponse> getPendingPosts();
     
-    ReviewResponse approvePost(Long postId);
+    ReviewResponse approvePost(Long postId, ReviewRequest request);
     
     ReviewResponse rejectPost(Long postId, ReviewRequest request);
     
